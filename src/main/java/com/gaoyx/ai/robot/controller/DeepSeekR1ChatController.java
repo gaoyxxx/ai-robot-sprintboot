@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * @author: gaoyx
  * @date: 2025/6/8 22:20
@@ -28,7 +31,8 @@ public class DeepSeekR1ChatController {
     public Flux<String> generateStream(@RequestParam(value = "message", defaultValue = "你是谁？") String message) {
         // 构建提示词
         Prompt prompt = new Prompt(new UserMessage(message));
-
+        // 使用原子布尔值跟踪分隔线状态（每个请求独立）
+        AtomicBoolean needSeparator = new AtomicBoolean(true);
         // 流式输出
         return deepSeekChatModel.stream(prompt)
                 .mapNotNull(chatResponse -> {
@@ -39,9 +43,26 @@ public class DeepSeekR1ChatController {
                     // 推理结束后的正式回答
                     String text = deepSeekAssistantMessage.getText();
 
-                    String rawContent = StringUtils.isNotBlank(reasoningContent) ? reasoningContent : text;
+                    // 是否是正式回答
+                    boolean isTextResponse = false;
+                    String rawContent;
+                    if (Objects.isNull(text)) {
+                        rawContent = reasoningContent;
+                    } else {
+                        rawContent = text;
+                        isTextResponse = true; // 标记为正式回答
+                    }
 
-                    return StringUtils.isNotBlank(rawContent) ? rawContent.replace("\n", "<br>") : rawContent;
+                    // 处理换行
+                    String processed = StringUtils.isNotBlank(rawContent) ? rawContent.replace("\n", "<br>") : rawContent;
+
+                    // 在正式回答内容之前，添加一个分隔线
+                    if (isTextResponse
+                            && needSeparator.compareAndSet(true, false)) {
+                        processed = "<hr>" + processed; // 使用 HTML 的 <hr> 标签实现
+                    }
+
+                    return processed;
                 });
     }
 }
