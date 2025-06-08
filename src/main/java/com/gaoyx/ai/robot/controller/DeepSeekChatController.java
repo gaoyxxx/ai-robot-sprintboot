@@ -7,6 +7,9 @@ import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+/**
+ *
+ */
 @RestController
 @RequestMapping("/ai")
 public class DeepSeekChatController {
