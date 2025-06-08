@@ -8,5 +8,6 @@ spring:
       base-url: https://api.deepseek.com
       chat:
         options:
-          model: deepseek-chat
+          # model: deepseek-chat
+          model: deepseek-reasoner
           temperature: 0.8 # 用于控制生成文本的随机性和创造性
